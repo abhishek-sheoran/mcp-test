@@ -26,7 +26,7 @@ const bookAppointment = async (appointmentData: AppointmentData): Promise<{ succ
 
 
 // Simulated API call for fetching available time slots
-const fetchTimeSlots = async (date: Date): Promise<TimeSlot[]> => {
+const fetchTimeSlots = async (date: string): Promise<TimeSlot[]> => {
     return new Promise((resolve) => {
         setTimeout(() => {
             resolve([
