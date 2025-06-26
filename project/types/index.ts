@@ -10,6 +10,7 @@ export interface Dealership {
   name: string;
   address: string;
   mykDealerUUID: string;
+  mykDealerDepartmentUUID: string;
 }
 
 export interface Service {

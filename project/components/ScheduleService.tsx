@@ -21,144 +21,11 @@ import {
 } from 'lucide-react';
 import { Vehicle, Service, TransportOption, AppointmentData, TimeSlot } from '@/types';
 import { mockUser, mockDealerships } from '@/types/mock-data';
-
-// Simulated API call for fetching vehicles
-const fetchVehicles = async (): Promise<Vehicle[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve(mockUser.vehicles);
-    }, 2000); // Simulate 2 second API delay
-  });
-};
-
-// Simulated API call for fetching available services
-const fetchServices = async (): Promise<Service[]> => {
-  // TODO: Fetch operations that myKaarma has to offer at this dealership via API Call to their endpoint.
-  
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        { id: '1', name: 'Engine Oil Service', description: 'Complete oil change and filter replacement' },
-        { id: '2', name: 'Tire Rotation and Balance', description: 'Rotate tires and check balance' },
-        { id: '3', name: 'Brake System Inspection', description: 'Comprehensive brake system check' },
-        { id: '4', name: 'Diagnostic Check', description: 'Computer diagnostic scan' },
-        { id: '5', name: 'Battery Test', description: 'Battery health and charging system test' },
-        { id: '6', name: 'Air Filter Replacement', description: 'Replace engine air filter' },
-        { id: '7', name: 'Transmission Service', description: 'Transmission fluid change and inspection' },
-        { id: '8', name: 'Coolant System Service', description: 'Coolant flush and system check' },
-        { id: '9', name: 'Spark Plug Replacement', description: 'Replace worn spark plugs' },
-        { id: '10', name: 'Cabin Air Filter', description: 'Replace cabin air filter for clean air' },
-      ]);
-    }, 1500); // Simulate 1.5 second API delay
-  });
-};
-
-// Simulated API call to verify if customer is registered
-const verifyCustomer = async (userEmail: string): Promise<{ isRegistered: boolean; customerId?: string }> => {
-  // TODO: Replace with actual API call to check if valid customer exists in myKaarma with matching email.
-  const response = await fetch(`https://srishti79.mykaarma.com/department//verify`);
-  // Example: const response = await fetch(`/api/customer/verify?email=${userEmail}`);
-  // return response.json();
-  
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      // Simulate that 70% of users are already registered
-      const isRegistered = Math.random() > 0.3;
-      resolve({
-        isRegistered,
-        customerId: isRegistered ? `CUST_${Date.now()}` : undefined
-      });
-    }, 1000); // Simulate 1 second API delay
-  });
-};
-
-// Simulated API call to register customer at dealership
-const registerCustomer = async (userEmail: string, dealershipId: string): Promise<{ success: boolean; customerId: string }> => {
-  // TODO: Replace with actual API call to register customer
-  // Example: const response = await fetch('/api/customer/register', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify({ email: userEmail, dealershipId })
-  // });
-  // return response.json();
-  
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        customerId: `CUST_${Date.now()}`
-      });
-    }, 1500); // Simulate 1.5 second API delay
-  });
-};
-
-// Simulated API call for fetching transport options
-const fetchTransportOptions = async (): Promise<TransportOption[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        {
-          id: '1',
-          name: 'Wait at Dealership',
-          description: 'Stay at our comfortable lounge with complimentary refreshments and Wi-Fi'
-        },
-        {
-          id: '2',
-          name: 'Drop Off & Pick Up',
-          description: 'Leave your vehicle with us and arrange for pickup when service is complete'
-        },
-        {
-          id: '3',
-          name: 'Courtesy Vehicle',
-          description: 'Use one of our courtesy vehicles while your car is being serviced'
-        },
-        {
-          id: '4',
-          name: 'Shuttle Service',
-          description: 'Take advantage of our complimentary shuttle service within 5 miles'
-        }
-      ]);
-    }, 1500); // Simulate 1.5 second API delay
-  });
-};
-
-// Simulated API call for fetching available time slots
-const fetchTimeSlots = async (date: Date): Promise<TimeSlot[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([
-        { id: '1', time: '9:00 AM', available: true },
-        { id: '2', time: '10:00 AM', available: true },
-        { id: '3', time: '11:00 AM', available: false },
-        { id: '4', time: '1:00 PM', available: true },
-        { id: '5', time: '2:00 PM', available: true },
-        { id: '6', time: '3:00 PM', available: false },
-        { id: '7', time: '4:00 PM', available: true },
-        { id: '8', time: '5:00 PM', available: true },
-      ]);
-    }, 1000); // Simulate 1 second API delay
-  });
-};
-
-// Simulated API call for booking the appointment
-const bookAppointment = async (appointmentData: AppointmentData): Promise<{ success: boolean; appointmentId: string }> => {
-  // TODO: Replace with actual API call to book appointment
-  // Example: const response = await fetch('/api/appointments', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(appointmentData)
-  // });
-  // return response.json();
-  
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve({
-        success: true,
-        appointmentId: `APT_${Date.now()}`
-      });
-    }, 2000); // Simulate 2 second API delay
-  });
-};
+import {fetchVehicles} from "@/actions/vehicle";
+import {fetchTransportOptions} from "@/actions/transport-options";
+import {bookAppointment, fetchTimeSlots} from "@/actions/appointment";
+import {fetchServices} from "@/actions/operations";
+import {getMyKaarmaCustomer} from "@/actions/customer";
 
 interface ScheduleServiceProps {
   userEmail?: string; // Add user email prop to access logged-in user
@@ -307,49 +174,16 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
       }
     }
     // Special handling for step 1 - verify/register customer when moving from vehicle selection
-    else if (currentStep === 1) {
-      setIsProcessingNext(true);
-      
-      try {
-        // Step 1: Verify if customer is registered
-        console.log('Verifying customer registration...');
-        const verificationResult = await verifyCustomer(userEmail);
-        
-        if (verificationResult.isRegistered) {
-          console.log('Customer is already registered:', verificationResult.customerId);
-          setCustomerId(verificationResult.customerId!);
-        } else {
-          console.log('Customer not registered, proceeding to register...');
-          
-          // Step 2: Register customer if not already registered
-          // Note: We'll register at the selected dealership once they choose one
-          // For now, we'll mark them as needing registration
-          setCustomerId(null);
-        }
-        
-        // Proceed to next step
-        setCurrentStep(currentStep + 1);
-        
-      } catch (error) {
-        console.error('Failed to verify/register customer:', error);
-        // TODO: Show error message to user
-        // For now, we'll still allow them to proceed
-        setCurrentStep(currentStep + 1);
-      } finally {
-        setIsProcessingNext(false);
-      }
-    } 
-    // Special handling for step 2 - register customer at selected dealership if needed
     else if (currentStep === 2 && !customerId) {
       setIsProcessingNext(true);
       
       try {
-        console.log('Registering customer at dealership...');
-        const registrationResult = await registerCustomer(userEmail, appointmentData.dealership!.id);
+        console.log('Getting myKaarma customer at current dealership.');
+        const mykCustomer = await getMyKaarmaCustomer(userEmail, appointmentData.dealership!.mykDealerDepartmentUUID);
         
-        if (registrationResult.success) {
-          console.log('Customer successfully registered:', registrationResult.customerId);
-          setCustomerId(registrationResult.customerId);
+        if (mykCustomer) {
+          console.log('Customer successfully registered:', mykCustomer);
+          setCustomerId(mykCustomer.customerId);
         } else {
           console.error('Failed to register customer');
           // TODO: Show error message to user
