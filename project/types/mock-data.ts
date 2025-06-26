@@ -27,7 +27,7 @@ const mockUser: User = {
 
 const mockDealerships: Dealership[] = [
     { id: '1', name: 'BMW of Mt. Laurel', address: '1220 NJ-73, Mt Laurel Township, NJ 08054, United States', mykDealerUUID: 'cb731d36fd635ddd6ef8dd43500892b0c0249d1c01a46dbcc445a809c0a8e3b2', mykDealerDepartmentUUID: '8ec821aefe98664ab15df7c426c3c46f9c37d0b1aeda9ff58df3db89bb0a55a3' },
-    { id: '2', name: 'BMW Northwest', address: '456 Oak Ave, North District',  mykDealerUUID: '5765507a95f23d2da7c96b5d88100bfebdc2883af8cb925ce2b61934884b24b5', mykDealerDepartmentUUID: 'b1fc4c63cce0e9fbed5406b9fea400262066700b286c827168e63cfc00350aa1' },
+    { id: '2', name: 'BMW Northwest', address: '456 Oak Ave, North District',  mykDealerUUID: 'cb731d36fd635ddd6ef8dd43500892b0c0249d1c01a46dbcc445a809c0a8e3b2', mykDealerDepartmentUUID: '8ec821aefe98664ab15df7c426c3c46f9c37d0b1aeda9ff58df3db89bb0a55a3' },
   ];
   
   const mockTransportOptions: TransportOption[] = [
