@@ -3,6 +3,7 @@ export interface Vehicle {
   model: string;
   year: number;
   vin: string;
+  mykaarmaVehicleUUID?: string;
 }
 
 export interface Dealership {
@@ -17,6 +18,9 @@ export interface Service {
   id: string;
   name: string;
   description: string;
+  price?: number;
+  duration?: number;
+  serviceType?: string;
 }
 
 export interface TransportOption {
