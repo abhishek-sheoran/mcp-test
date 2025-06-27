@@ -26,6 +26,7 @@ import {fetchTransportOptions} from "@/actions/transport-options";
 import {bookAppointment, fetchTimeSlots} from "@/actions/appointment";
 import {fetchServices} from "@/actions/operations";
 import {getMyKaarmaCustomer} from "@/actions/customer";
+import type { MyKaarmaCustomer } from '@/types/mykaarma';
 
 interface ScheduleServiceProps {
   userEmail?: string; // Add user email prop to access logged-in user
@@ -48,6 +49,7 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
   const [isBookingAppointment, setIsBookingAppointment] = useState(false);
   const [isProcessingNext, setIsProcessingNext] = useState(false);
   const [customerId, setCustomerId] = useState<string | null>(null);
+  const [customerData, setCustomerData] = useState<MyKaarmaCustomer | null>(null);
   const [appointmentId, setAppointmentId] = useState<string | null>(null);
 
   const steps = [
@@ -77,11 +79,11 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
     }
   }, [currentStep, vehicles.length]);
 
-  // Load services when reaching step 3
+  // Load services when reaching step 3 and we have a dealership selected
   useEffect(() => {
-    if (currentStep === 3 && services.length === 0) {
+    if (currentStep === 3 && services.length === 0 && appointmentData.dealership) {
       setIsLoadingServices(true);
-      fetchServices()
+      fetchServices(appointmentData.dealership.mykDealerUUID)
         .then((fetchedServices) => {
           setServices(fetchedServices);
         })
@@ -93,13 +95,13 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
           setIsLoadingServices(false);
         });
     }
-  }, [currentStep, services.length]);
+  }, [currentStep, services.length, appointmentData.dealership]);
 
-  // Load transport options when reaching step 4
+  // Load transport options when reaching step 4 and we have a dealership selected
   useEffect(() => {
-    if (currentStep === 4 && transportOptions.length === 0) {
+    if (currentStep === 4 && transportOptions.length === 0 && appointmentData.dealership) {
       setIsLoadingTransport(true);
-      fetchTransportOptions()
+      fetchTransportOptions(appointmentData.dealership.mykDealerDepartmentUUID)
         .then((fetchedOptions) => {
           setTransportOptions(fetchedOptions);
         })
@@ -111,18 +113,26 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
           setIsLoadingTransport(false);
         });
     }
-  }, [currentStep, transportOptions.length]);
+  }, [currentStep, transportOptions.length, appointmentData.dealership]);
 
-  // Load time slots when date is selected
+  // Load time slots when date is selected and we have all required data
   useEffect(() => {
-    if (selectedDate) {
+    if (selectedDate && appointmentData.dealership && appointmentData.transportOption) {
       setIsLoadingTimeSlots(true);
       setTimeSlots([]); // Clear existing time slots
       setAppointmentData(prev => ({ ...prev, timeSlot: undefined })); // Clear selected time slot
-
-      const selectedDateString = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`
+      
+      const selectedDateString = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}-${String(selectedDate.getDate()).padStart(2, '0')}`;
       console.log('Fetching time slots for date:', selectedDateString);
-      fetchTimeSlots(selectedDateString)
+      
+      fetchTimeSlots(
+        selectedDateString,
+        appointmentData.dealership.mykDealerDepartmentUUID,
+        appointmentData.vehicle,
+        appointmentData.services,
+        appointmentData.transportOption,
+        customerData
+      )
         .then((fetchedSlots) => {
           setTimeSlots(fetchedSlots);
         })
@@ -134,7 +144,7 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
           setIsLoadingTimeSlots(false);
         });
     }
-  }, [selectedDate]);
+  }, [selectedDate, appointmentData.dealership, appointmentData.vehicle, appointmentData.services, appointmentData.transportOption, customerData]);
 
   const canProceed = () => {
     switch (currentStep) {
@@ -156,7 +166,7 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
       setIsBookingAppointment(true);
       
       try {
-        const bookingResult = await bookAppointment(appointmentData);
+        const bookingResult = await bookAppointment(appointmentData, selectedDate, customerData?.uuid);
         
         if (bookingResult.success) {
           console.log('Appointment booked successfully:', bookingResult.appointmentId);
@@ -175,27 +185,32 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
         setIsBookingAppointment(false);
       }
     }
-    // Special handling for step 1 - verify/register customer when moving from vehicle selection
+    // Special handling for step 2 - verify/fetch customer when moving from dealership selection
     else if (currentStep === 2 && !customerId) {
       setIsProcessingNext(true);
       
       try {
-        console.log('Getting myKaarma customer at current dealership.');
-        const mykCustomer = await getMyKaarmaCustomer(userEmail, appointmentData.dealership!.mykDealerDepartmentUUID);
-        
-        if (mykCustomer) {
-          console.log('Customer successfully registered:', mykCustomer);
-          setCustomerId(mykCustomer.customerId);
-        } else {
-          console.error('Failed to register customer');
-          // TODO: Show error message to user
+        if (!appointmentData.dealership?.mykDealerDepartmentUUID) {
+          throw new Error('Dealership department UUID is missing');
         }
+
+        console.log('Getting myKaarma customer at current dealership.');
+        const result = await getMyKaarmaCustomer(userEmail, appointmentData.dealership.mykDealerDepartmentUUID);
         
-        // Proceed to next step
+                 if (result.customerData) {
+           console.log('Customer found:', result.customerData);
+           setCustomerId(result.customerData.uuid);
+           setCustomerData(result.customerData);
+         } else {
+           console.error('Failed to find customer:', result.error);
+           // TODO: Show error message to user - customer not found or other error
+         }
+        
+        // Proceed to next step regardless of customer lookup result
         setCurrentStep(currentStep + 1);
         
       } catch (error) {
-        console.error('Failed to register customer:', error);
+        console.error('Failed to fetch customer:', error);
         // TODO: Show error message to user
         // For now, we'll still allow them to proceed
         setCurrentStep(currentStep + 1);
@@ -298,7 +313,14 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
                       ? 'border-[#1C69D4] bg-blue-50' 
                       : 'border-slate-200'
                   }`}
-                  onClick={() => setAppointmentData({ ...appointmentData, dealership })}
+                  onClick={() => {
+                    // Clear services and transport options when dealership changes to trigger reload with new dealer
+                    if (appointmentData.dealership?.id !== dealership.id) {
+                      setServices([]);
+                      setTransportOptions([]);
+                    }
+                    setAppointmentData({ ...appointmentData, dealership });
+                  }}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -403,7 +425,9 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
                 value={appointmentData.transportOption?.id}
                 onValueChange={(value) => {
                   const option = transportOptions.find(o => o.id === value);
-                  setAppointmentData({ ...appointmentData, transportOption: option });
+                  // Clear time slots when transport option changes to trigger fresh availability check
+                setTimeSlots([]);
+                setAppointmentData({ ...appointmentData, transportOption: option });
                 }}
                 className="space-y-4"
               >
@@ -492,8 +516,10 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
             <div>
               <h2 className="text-3xl font-bold text-slate-900 mb-4">Appointment Scheduled!</h2>
               <p className="text-slate-600 text-lg">Your service appointment has been successfully scheduled.</p>
-              {customerId && (
-                <p className="text-sm text-slate-500 mt-2">Customer ID: {customerId}</p>
+              {customerData && (
+                <p className="text-sm text-slate-500 mt-2">
+                  Customer: {customerData.fname} {customerData.lname} ({customerData.uuid})
+                </p>
               )}
               {appointmentId && (
                 <p className="text-sm text-slate-500">Appointment ID: {appointmentId}</p>
@@ -555,7 +581,10 @@ export default function ScheduleService({ userEmail = 'user@example.com' }: Sche
                 setSelectedDate(undefined);
                 setVehicles([]); // Clear vehicles to trigger reload
                 setServices([]); // Clear services to trigger reload
+                setTransportOptions([]); // Clear transport options to trigger reload
                 setCustomerId(null); // Reset customer ID
+                setCustomerData(null); // Reset customer data
+                setAppointmentId(null); // Reset appointment ID
               }}
             >
               Schedule Another Appointment
