@@ -21,6 +21,7 @@ export interface Service {
   price?: number;
   duration?: number;
   serviceType?: string;
+  mykUUID?: string;
 }
 
 export interface TransportOption {
