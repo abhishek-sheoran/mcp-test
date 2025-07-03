@@ -1,4 +1,4 @@
-
+"use server";
 // Simulated API call for fetching vehicles
 import {Vehicle} from "@/types";
 import {mockUser} from "@/types/mock-data";

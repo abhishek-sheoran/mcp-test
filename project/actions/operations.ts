@@ -1,4 +1,4 @@
-
+"use server";
 
 // Simulated API call for fetching available services
 import {Service} from "@/types";

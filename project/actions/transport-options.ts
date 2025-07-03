@@ -1,4 +1,4 @@
-
+"use server";
 // Simulated API call for fetching transport options
 import {TransportOption} from "@/types";
 

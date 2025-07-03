@@ -1,5 +1,4 @@
-
-
+"use server";
 
 // Simulated API call to register customer at dealership
 const getMyKaarmaCustomer = async (userEmail: string, dealershipId: string): Promise<{ success: boolean; customerId: string }> => {

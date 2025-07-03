@@ -1,7 +1,7 @@
 
 
 
-
+"use server";
 // Simulated API call for booking the appointment
 import {AppointmentData, TimeSlot} from "@/types";
 
