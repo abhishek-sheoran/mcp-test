@@ -5,7 +5,7 @@
 // Simulated API call for booking the appointment
 import {AppointmentData, TimeSlot} from "@/types";
 
-const SLOT_SIZE_IN_MINUTES = 15; // If start time is 09:00:00 and slot size is 15 minutes, then end time will be 09:14:59;
+const SLOT_SIZE_IN_MINUTES = 15; 
 
 const bookAppointment = async (appointmentData: AppointmentData): Promise<{ success: boolean; appointmentId: string }> => {
     // TODO: Replace with actual API call to book appointment
